@@ -39,8 +39,8 @@ HEADERS = {
 BASE_URL = "https://appws.runtastic.com"
 SYNC_URL = "/webapps/services/runsessions/v3/sync"
 
-
-TIME_OUT = httpx.Timeout(20.0, connect_timeout=120.0)
+# For timeout Exception change here
+TIME_OUT = httpx.Timeout(60.0, connect_timeout=240.0)
 
 rids = []
 
