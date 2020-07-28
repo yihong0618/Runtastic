@@ -3,8 +3,8 @@ Download all your Runtastic activities save to gpx
 
 # Features
 
-- GPX: you can save your own data, that can upload to strava or runkeeper
-- Easy to use
+- All gpx: you can save your own data, which can upload to strava or runkeeper
+- Easy to use: just command line
 - Fast: Using async download 1500 activities only cost 3mins
 
 # Use
