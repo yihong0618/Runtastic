@@ -200,6 +200,7 @@ async def get_and_save_one_activate(rid, asyncio_semaphore):
         gpx_data = gen_gpx(gpx_points)
         # use start time as gpx name
         file_name = str(gpx_points[0].get("time")) + ".gpx"
+        file_name = file_name.replace(":","-")
         file_path = os.path.join(GPX_FILE_DIR, file_name)
         with open(file_path, "w") as f:
             print(f"Saving gpx file name {file_name}")
