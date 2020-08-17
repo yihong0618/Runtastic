@@ -12,7 +12,7 @@ Download all your Runtastic activities save to gpx
 1. pip install runtastic
 2. runtastic  -e "your email" -p "your password"
 
-# Use Clone
+# Using Clone
 
 1. Clone this repo
 2. pip/pip3 install -r requirements.txt (or use env)
