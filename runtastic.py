@@ -241,19 +241,12 @@ async def run(email, password):
     return await asyncio.gather(*tasks)
 
 
-def main(email, password):
+def main():
     # make output dir
     if not os.path.exists(GPX_FILE_DIR):
         os.mkdir(GPX_FILE_DIR)
-    start = time.time()
-    print("Start to save gpx in GPX_OUT please wait")
-    loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(run(email, password))
-    loop.run_until_complete(future)
-    print(f"save to gpx cost {time.time() - start} seconds")
 
-
-if __name__ == "__main__":
+    # cli args
     ap = argparse.ArgumentParser(description="Get your runtastic GPX data")
     ap.add_argument("-e", "--email", help="Your runtastic email or user name")
     ap.add_argument("-p", "--password", help="Your runtastic password")
@@ -265,4 +258,13 @@ if __name__ == "__main__":
     if not password:
         raise Exception("you must enter your password")
 
-    main(email, password)
+    start = time.time()
+    print("Start to save gpx in GPX_OUT please wait")
+    loop = asyncio.get_event_loop()
+    future = asyncio.ensure_future(run(email, password))
+    loop.run_until_complete(future)
+    print(f"save to gpx cost {time.time() - start} seconds")
+
+
+if __name__ == "__main__":
+    main()

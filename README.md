@@ -7,7 +7,12 @@ Download all your Runtastic activities save to gpx
 - Easy to use: just command line
 - Fast: Using async download 1500 activities only cost 3mins
 
-# Use
+# Using pip
+
+1. pip install runtastic
+2. runtastic  -e "your email" -p "your password"
+
+# Use Clone
 
 1. Clone this repo
 2. pip/pip3 install -r requirements.txt (or use env)
