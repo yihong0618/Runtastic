@@ -44,6 +44,22 @@ TIME_OUT = httpx.Timeout(60.0, connect_timeout=240.0)
 
 rids = []
 
+# utils
+def try_to_parse_time(from_time):
+    # if not a format timestamp return 0
+    if from_time.isdigit():
+        if len(from_time) == 10:
+            return str(int(from_time) * 1000)
+        elif len(from_time) == 13:
+            return from_time
+        else:
+            return "0"
+    try:
+        from_time = time.mktime(datetime.datetime.strptime(from_time, "%Y-%m-%d").timetuple())
+        return str(int(from_time) * 1000)
+    except:
+        return "0"
+
 
 def make_auth_token(appKey, appSecret, str_now):
     s = f"--{appKey}--{appSecret}--{str_now}--"
@@ -207,7 +223,8 @@ async def get_and_save_one_activate(rid, asyncio_semaphore):
             f.write(gpx_data)
 
 
-async def get_to_sync_sessions(start="0"):
+async def get_to_sync_sessions(from_time):
+    start = try_to_parse_time(from_time) 
     sync_data = {
         "syncedUntil": start,
         "perPage": "100",
@@ -229,11 +246,11 @@ async def get_to_sync_sessions(start="0"):
     return rids
 
 
-async def run(email, password):
+async def run(email, password, from_time):
     # chunk async tasks for every 100
     asyncio_semaphore = asyncio.BoundedSemaphore(100)
     await _login(email, password)
-    rids = await get_to_sync_sessions()
+    rids = await get_to_sync_sessions(from_time)
     tasks = [
         asyncio.ensure_future(get_and_save_one_activate(rid, asyncio_semaphore))
         for rid in rids
@@ -250,9 +267,11 @@ def main():
     ap = argparse.ArgumentParser(description="Get your runtastic GPX data")
     ap.add_argument("-e", "--email", help="Your runtastic email or user name")
     ap.add_argument("-p", "--password", help="Your runtastic password")
+    ap.add_argument("-t", "--from-time", help="from time", default="0", dest="from_time")
     args = ap.parse_args()
     email = args.email
     password = args.password
+    from_time = args.from_time
     if not email:
         raise Exception("you must enter your email")
     if not password:
@@ -261,7 +280,7 @@ def main():
     start = time.time()
     print("Start to save gpx in GPX_OUT please wait")
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(run(email, password))
+    future = asyncio.ensure_future(run(email, password, from_time))
     loop.run_until_complete(future)
     print(f"save to gpx cost {time.time() - start} seconds")
 
