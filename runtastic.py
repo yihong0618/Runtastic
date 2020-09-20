@@ -40,7 +40,7 @@ BASE_URL = "https://appws.runtastic.com"
 SYNC_URL = "/webapps/services/runsessions/v3/sync"
 
 # For timeout Exception change here
-TIME_OUT = httpx.Timeout(60.0, connect_timeout=240.0)
+TIME_OUT = httpx.Timeout(240.0, connect_timeout=360.0)
 
 rids = []
 
@@ -165,6 +165,7 @@ def gen_gpx(gpx_points):
     # Create first segment in our GPX track:
     gpx_segment = gpxpy.gpx.GPXTrackSegment()
     gpx_track.segments.append(gpx_segment)
+    file_name = gpx_points[0].get("start_time")
 
     for p in gpx_points:
         # delete useless attr
@@ -182,10 +183,10 @@ def gen_gpx(gpx_points):
             )
             point.extensions.append(gpx_extension_hr)
         gpx_segment.points.append(point)
-    return gpx.to_xml()
+    return gpx.to_xml(), file_name
 
 
-async def get_and_save_one_activate(rid, asyncio_semaphore):
+async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR):
     async with asyncio_semaphore:
         data = json.dumps(
             {
@@ -194,12 +195,27 @@ async def get_and_save_one_activate(rid, asyncio_semaphore):
                 "includeHeartRateZones": True,
             }
         )
-        async with httpx.AsyncClient(timeout=TIME_OUT) as client:
-            r = await client.post(
-                BASE_URL + "/webapps/services/runsessions/v2/{}/details".format(rid),
-                headers=HEADERS,
-                data=data,
-            )
+        try:
+            async with httpx.AsyncClient(timeout=TIME_OUT) as client:
+                r = await client.post(
+                    BASE_URL + "/webapps/services/runsessions/v2/{}/details".format(rid),
+                    headers=HEADERS,
+                    data=data,
+                )
+        except:
+            await asyncio.sleep(1)
+            print("retry")
+            try:
+                async with httpx.AsyncClient(timeout=TIME_OUT) as client:
+                    r = await client.post(
+                        BASE_URL + "/webapps/services/runsessions/v2/{}/details".format(rid),
+                        headers=HEADERS,
+                        data=data,
+                    )
+            except:
+                print(f"fail parse {rid} gpx please try again")
+                pass
+            
         run_session = r.json()["runSessions"]
         gps_trace = run_session.get("gpsData", {}).get("trace", "")
         # remove session that add manually
@@ -213,11 +229,10 @@ async def get_and_save_one_activate(rid, asyncio_semaphore):
             if heart_rate_points:
                 update_gpx_points(gpx_points, heart_rate_points)
 
-        gpx_data = gen_gpx(gpx_points)
+        gpx_data, file_name = gen_gpx(gpx_points)
         # use start time as gpx name
-        file_name = str(gpx_points[0].get("time")) + ".gpx"
-        file_name = file_name.replace(":","-")
-        file_path = os.path.join(GPX_FILE_DIR, file_name)
+        file_name = str(file_name) + ".gpx"
+        file_path = os.path.join(output, file_name)
         with open(file_path, "w") as f:
             print(f"Saving gpx file name {file_name}")
             f.write(gpx_data)
@@ -246,32 +261,34 @@ async def get_to_sync_sessions(from_time):
     return rids
 
 
-async def run(email, password, from_time):
+async def run(email, password, from_time, output=GPX_FILE_DIR):
     # chunk async tasks for every 100
     asyncio_semaphore = asyncio.BoundedSemaphore(100)
     await _login(email, password)
     rids = await get_to_sync_sessions(from_time)
     tasks = [
-        asyncio.ensure_future(get_and_save_one_activate(rid, asyncio_semaphore))
+        asyncio.ensure_future(get_and_save_one_activate(rid, asyncio_semaphore, output))
         for rid in rids
     ]
     return await asyncio.gather(*tasks)
 
 
 def main():
-    # make output dir
-    if not os.path.exists(GPX_FILE_DIR):
-        os.mkdir(GPX_FILE_DIR)
 
     # cli args
     ap = argparse.ArgumentParser(description="Get your runtastic GPX data")
     ap.add_argument("-e", "--email", help="Your runtastic email or user name")
     ap.add_argument("-p", "--password", help="Your runtastic password")
     ap.add_argument("-t", "--from-time", help="from time", default="0", dest="from_time")
+    ap.add_argument("-o", "--out-dir", help="output dir", default=GPX_FILE_DIR, dest="out_dir")
     args = ap.parse_args()
     email = args.email
     password = args.password
     from_time = args.from_time
+    output = args.out_dir
+    # make output dir
+    if not os.path.exists(output):
+        os.mkdir(output)
     if not email:
         raise Exception("you must enter your email")
     if not password:
@@ -280,7 +297,7 @@ def main():
     start = time.time()
     print("Start to save gpx in GPX_OUT please wait")
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(run(email, password, from_time))
+    future = asyncio.ensure_future(run(email, password, from_time, output))
     loop.run_until_complete(future)
     print(f"save to gpx cost {time.time() - start} seconds")
 
