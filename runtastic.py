@@ -203,7 +203,7 @@ async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR)
                     data=data,
                 )
         except:
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
             print("retry")
             try:
                 async with httpx.AsyncClient(timeout=TIME_OUT) as client:
@@ -214,7 +214,7 @@ async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR)
                     )
             except:
                 print(f"fail parse {rid} gpx please try again")
-                pass
+                return
             
         run_session = r.json()["runSessions"]
         gps_trace = run_session.get("gpsData", {}).get("trace", "")
@@ -263,7 +263,7 @@ async def get_to_sync_sessions(from_time):
 
 async def run(email, password, from_time, output=GPX_FILE_DIR):
     # chunk async tasks for every 100
-    asyncio_semaphore = asyncio.BoundedSemaphore(100)
+    asyncio_semaphore = asyncio.BoundedSemaphore(50)
     await _login(email, password)
     rids = await get_to_sync_sessions(from_time)
     tasks = [
