@@ -19,7 +19,7 @@ Download all your Runtastic activities save to gpx
 1. Clone this repo
 2. pip/pip3 install -r requirements.txt (or use env)
 3. python runtastic.py -e "your email" -p "your password"
-4. python runtastic.py -e "your email" -p "your password" -t "date"
+4. python runtastic.py -e "your email" -p "your password" -t "date" -o "dir_name"
 
 ![use](./static/use.png)
 ![gpx](./static/save_gpx.png)
