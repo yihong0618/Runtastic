@@ -1,2 +1,2 @@
-httpx
+httpx==0.15.4
 gpxpy

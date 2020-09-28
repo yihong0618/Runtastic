@@ -40,7 +40,7 @@ BASE_URL = "https://appws.runtastic.com"
 SYNC_URL = "/webapps/services/runsessions/v3/sync"
 
 # For timeout Exception change here
-TIME_OUT = httpx.Timeout(240.0, connect_timeout=360.0)
+TIME_OUT = httpx.Timeout(240.0, connect=360.0)
 
 rids = []
 
