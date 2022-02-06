@@ -22,13 +22,13 @@ UNPACK_GPS_CODE = ">q3fhfi4h"
 UNPACK_HEARTRATE_CODE = ">q2B2i"
 
 SECRET_DICT = {
-    "APP_SECRET": "T68bA6dHk2ayW1Y39BQdEnUmGqM8Zq1SFZ3kNas3KYDjp471dJNXLcoYWsDBd1mH",
+    "APP_SECRET": "668bA6dHk2ayW1Y39BQdInUmGqN8Zq1SFZ3kMas3RYDjp571dONXLcoYWsDBd2mB",
     "APP_KEY": "com.runtastic.android",
     "sessionCookie": "_runtastic_appws_session",
 }
 
 HEADERS = {
-    "X-App-Version": "6.9.2",
+    "X-App-Version": "12.11",
     "X-App-Key": "com.runtastic.android",
     "X-Auth-Token": "",
     "Content-Type": "application/json",
