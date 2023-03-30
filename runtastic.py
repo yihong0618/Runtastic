@@ -22,19 +22,22 @@ UNPACK_GPS_CODE = ">q3fhfi4h"
 UNPACK_HEARTRATE_CODE = ">q2B2i"
 
 SECRET_DICT = {
-    "APP_SECRET": "668bA6dHk2ayW1Y39BQdInUmGqN8Zq1SFZ3kMas3RYDjp571dONXLcoYWsDBd2mB",
-    "APP_KEY": "com.runtastic.android",
-    "sessionCookie": "_runtastic_appws_session",
+    "APP_SECRET": "QO3wOdHttnMamWEdtyziWfhUXY4A0jQQ3YV1xOT1UBro4w2V4SxMnjbias8vqRXE",
+    "APP_KEY": "at.runtastic.gpssportapp",
 }
 
 HEADERS = {
-    "X-App-Version": "12.11",
-    "X-App-Key": "com.runtastic.android",
-    "X-Auth-Token": "",
-    "Content-Type": "application/json",
+    "Host": "appws.runtastic.com",
     "X-Date": "",
+    "Accept": "*/*",
+    "Accept-Language": "zh-CN,zh-Hans;q=0.9",
+    "User-Agent": "runtastic/11.19.1.5900 CFNetwork/978.0.7 Darwin/18.7.0",
+    "Connection": "keep-alive",
+    "X-Auth-Token": "",
+    "X-App-Version": "11.19.1",
+    "X-App-Key": "at.runtastic.gpssportapp",
+    "Content-Type": "application/json",
 }
-
 
 BASE_URL = "https://appws.runtastic.com"
 SYNC_URL = "/webapps/services/runsessions/v3/sync"
@@ -43,6 +46,7 @@ SYNC_URL = "/webapps/services/runsessions/v3/sync"
 TIME_OUT = httpx.Timeout(240.0, connect=360.0)
 
 rids = []
+
 
 # utils
 def try_to_parse_time(from_time):
@@ -55,7 +59,9 @@ def try_to_parse_time(from_time):
         else:
             return "0"
     try:
-        from_time = time.mktime(datetime.datetime.strptime(from_time, "%Y-%m-%d").timetuple())
+        from_time = time.mktime(
+            datetime.datetime.strptime(from_time, "%Y-%m-%d").timetuple()
+        )
         return str(int(from_time) * 1000)
     except:
         return "0"
@@ -80,16 +86,18 @@ def make_request_header(header):
 async def _login(email, password):
     headers = make_request_header(HEADERS)
     async with httpx.AsyncClient(timeout=TIME_OUT) as client:
+        json_data = {
+            "clientSecret": "QO3wOdHttnMamWEdtyziWfhUXY4A0jQQ3YV1xOT1UBro4w2V4SxMnjbias8vqRXE",
+            "password": password,
+            "grantType": "password",
+            "username": email,
+            "clientId": "L51fb74143ae7db04b45c174306eaed92da04af60b61d3a77a19315047ae5a65",
+        }
+
         r = await client.post(
-            BASE_URL + "/webapps/services/auth/login",
+            BASE_URL + "/webapps/services/auth/v2/login/runtastic",
             headers=headers,
-            data=json.dumps(
-                {
-                    "email": email,
-                    "additionalAttributes": ["accessToken"],
-                    "password": password,
-                }
-            ),
+            json=json_data
         )
     if r.status_code != 200:
         raise Exception("Please make sure your email or password are correct")
@@ -140,7 +148,12 @@ def decode_heart_rate_trace(trace):
         )
     # to heart rate format
     points_dict_list = [
-        {"start_time": p[0], "heart_rate": p[1],} for p in points if int(p[1]) != 0
+        {
+            "start_time": p[0],
+            "heart_rate": p[1],
+        }
+        for p in points
+        if int(p[1]) != 0
     ]
     return points_dict_list
 
@@ -198,7 +211,8 @@ async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR)
         try:
             async with httpx.AsyncClient(timeout=TIME_OUT) as client:
                 r = await client.post(
-                    BASE_URL + "/webapps/services/runsessions/v2/{}/details".format(rid),
+                    BASE_URL
+                    + "/webapps/services/runsessions/v2/{}/details".format(rid),
                     headers=HEADERS,
                     data=data,
                 )
@@ -208,14 +222,15 @@ async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR)
             try:
                 async with httpx.AsyncClient(timeout=TIME_OUT) as client:
                     r = await client.post(
-                        BASE_URL + "/webapps/services/runsessions/v2/{}/details".format(rid),
+                        BASE_URL
+                        + "/webapps/services/runsessions/v2/{}/details".format(rid),
                         headers=HEADERS,
                         data=data,
                     )
             except:
                 print(f"fail parse {rid} gpx please try again")
                 return
-            
+
         run_session = r.json()["runSessions"]
         gps_trace = run_session.get("gpsData", {}).get("trace", "")
         # remove session that add manually
@@ -239,7 +254,7 @@ async def get_and_save_one_activate(rid, asyncio_semaphore, output=GPX_FILE_DIR)
 
 
 async def get_to_sync_sessions(from_time):
-    start = try_to_parse_time(from_time) 
+    start = try_to_parse_time(from_time)
     sync_data = {
         "syncedUntil": start,
         "perPage": "100",
@@ -274,13 +289,16 @@ async def run(email, password, from_time, output=GPX_FILE_DIR):
 
 
 def main():
-
     # cli args
     ap = argparse.ArgumentParser(description="Get your runtastic GPX data")
     ap.add_argument("-e", "--email", help="Your runtastic email or user name")
     ap.add_argument("-p", "--password", help="Your runtastic password")
-    ap.add_argument("-t", "--from-time", help="from time", default="0", dest="from_time")
-    ap.add_argument("-o", "--out-dir", help="output dir", default=GPX_FILE_DIR, dest="out_dir")
+    ap.add_argument(
+        "-t", "--from-time", help="from time", default="0", dest="from_time"
+    )
+    ap.add_argument(
+        "-o", "--out-dir", help="output dir", default=GPX_FILE_DIR, dest="out_dir"
+    )
     args = ap.parse_args()
     email = args.email
     password = args.password
